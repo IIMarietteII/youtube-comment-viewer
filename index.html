@@ -45,8 +45,6 @@
         function checkPassword() {
             const password = document.getElementById("accessPass").value;
             //const correctPassword = "0000";  // <<<< 여기 비밀번호 바꿔도 됨
-            <script src="config.js"></script>
-            <script src="script.js"></script>
             if (password === correctPassword) {
                 document.getElementById("auth").style.display = "none";
                 document.getElementById("app").style.display = "block";
@@ -56,6 +54,7 @@
             }
         }
     </script>
+    <script src="config.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

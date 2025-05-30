@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>YouTube Comment Viewer (Protected)</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #app, #results {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="auth">
+        <h2>Enter Access Password</h2>
+        <input type="password" id="accessPass" placeholder="Password">
+        <button onclick="checkPassword()">Enter</button>
+        <p id="authError" style="color:red;"></p>
+    </div>
+
+    <div id="app">
+        <h1>YouTube Comment Viewer</h1>
+        <div class="form-group">
+            <label for="videoId">Video ID:</label>
+            <input type="text" id="videoId" placeholder="e.g. dQw4w9WgXcQ">
+        </div>
+        <div class="form-group">
+            <label for="startDate">Start Date (YYYY-MM-DD):</label>
+            <input type="date" id="startDate">
+        </div>
+        <div class="form-group">
+            <label for="endDate">End Date (YYYY-MM-DD):</label>
+            <input type="date" id="endDate">
+        </div>
+        <div class="form-group">
+            <label for="keyword">Keyword Filter:</label>
+            <input type="text" id="keyword" placeholder="optional">
+        </div>
+        <button onclick="fetchComments()">Fetch Comments</button>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function checkPassword() {
+            const password = document.getElementById("accessPass").value;
+            const correctPassword = "mypassword";  // <<<< 여기 비밀번호 바꿔도 됨
+            if (password === correctPassword) {
+                document.getElementById("auth").style.display = "none";
+                document.getElementById("app").style.display = "block";
+                document.getElementById("results").style.display = "block";
+            } else {
+                document.getElementById("authError").innerText = "Incorrect password.";
+            }
+        }
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>

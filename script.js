@@ -14,28 +14,43 @@ async function fetchComments() {
 
     try {
         do {
-            url = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=${videoId}&maxResults=100&pageToken=${pageToken}&key=${API_KEY}`;
+            url = `https://www.googleapis.com/youtube/v3/commentThreads?part=snippet,replies&videoId=${videoId}&maxResults=100&pageToken=${pageToken}&key=${API_KEY}`;
             const response = await fetch(url);
             const data = await response.json();
             pageToken = data.nextPageToken || "";
 
             for (const item of data.items) {
+                // Top-level comment
                 const comment = item.snippet.topLevelComment.snippet;
                 const commentDate = new Date(comment.publishedAt);
 
-                if (
-                    (!isNaN(startDate) && commentDate < startDate) ||
-                    (!isNaN(endDate) && commentDate > endDate)
-                ) continue;
-
+                if ((!isNaN(startDate) && commentDate < startDate) || (!isNaN(endDate) && commentDate > endDate)) continue;
                 if (keyword && !comment.textDisplay.toLowerCase().includes(keyword)) continue;
 
                 comments.push({
+                    type: "댓글",
                     author: comment.authorDisplayName,
                     text: comment.textDisplay,
                     publishedAt: comment.publishedAt,
                     likeCount: comment.likeCount
                 });
+
+                // Replies (대댓글)
+                if (item.replies && item.replies.comments) {
+                    for (const reply of item.replies.comments) {
+                        const replyDate = new Date(reply.snippet.publishedAt);
+                        if ((!isNaN(startDate) && replyDate < startDate) || (!isNaN(endDate) && replyDate > endDate)) continue;
+                        if (keyword && !reply.snippet.textDisplay.toLowerCase().includes(keyword)) continue;
+
+                        comments.push({
+                            type: "대댓글",
+                            author: reply.snippet.authorDisplayName,
+                            text: reply.snippet.textDisplay,
+                            publishedAt: reply.snippet.publishedAt,
+                            likeCount: reply.snippet.likeCount
+                        });
+                    }
+                }
             }
         } while (pageToken);
 
@@ -44,15 +59,20 @@ async function fetchComments() {
             return;
         }
 
-        let table = "<table><thead><tr><th>Author</th><th>Date</th><th>Likes</th><th>Comment</th></tr></thead><tbody>";
-        for (const c of comments) {
+        // Sort comments by date (newest first)
+        comments.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+
+        let table = "<table><thead><tr><th>#</th><th>Author</th><th>Comment</th><th>Likes</th><th>Date</th><th>Type</th></tr></thead><tbody>";
+        comments.forEach((c, index) => {
             table += `<tr>
+                        <td>${index + 1}</td>
                         <td>${c.author}</td>
-                        <td>${new Date(c.publishedAt).toLocaleString()}</td>
-                        <td>${c.likeCount}</td>
                         <td>${c.text}</td>
+                        <td>${c.likeCount}</td>
+                        <td>${new Date(c.publishedAt).toLocaleString()}</td>
+                        <td>${c.type}</td>
                       </tr>`;
-        }
+        });
         table += "</tbody></table>";
         resultsDiv.innerHTML = table;
     } catch (err) {

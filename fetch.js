@@ -102,6 +102,18 @@ async function fetchComments() {
     }
 }
 
+    const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.map(f => `"${f}"`).join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "youtube_comments.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+fetchComments();
+
 function downloadComments() {
     const rows = [["번호", "작성자", "내용", "좋아요수", "날짜", "타입"]];
     let index = 1;
@@ -115,14 +127,12 @@ function downloadComments() {
             c.type
         ]);
     }
-    const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.map(f => `"${f}"`).join(",")).join("\n");
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = "\uFEFF" + rows.map(e => e.map(f => `"${f}"`).join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", URL.createObjectURL(blob));
     link.setAttribute("download", "youtube_comments.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
 }
-
-fetchComments();

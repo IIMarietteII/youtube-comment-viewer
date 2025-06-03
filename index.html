@@ -36,26 +36,29 @@
             <label for="keyword">Keyword Filter:</label>
             <input type="text" id="keyword" placeholder="optional">
         </div>
-        <button onclick="fetchComments()">Fetch Comments</button>
-<span id="status" style="margin-left: 10px; color: #555;"></span>
-
-        <div id="results"></div>
+        <button onclick="openFetcher()">Fetch Comments (새 창)</button>
     </div>
 
     <script>
         function checkPassword() {
             const password = document.getElementById("accessPass").value;
-            //const correctPassword = "0000";  // <<<< 여기 비밀번호 바꿔도 됨
             if (password === correctPassword) {
                 document.getElementById("auth").style.display = "none";
                 document.getElementById("app").style.display = "block";
-                document.getElementById("results").style.display = "block";
             } else {
                 document.getElementById("authError").innerText = "Incorrect password.";
             }
         }
+
+        function openFetcher() {
+            const videoId = document.getElementById("videoId").value.trim();
+            const startDate = document.getElementById("startDate").value;
+            const endDate = document.getElementById("endDate").value;
+            const keyword = document.getElementById("keyword").value.trim();
+            const params = new URLSearchParams({ videoId, startDate, endDate, keyword }).toString();
+            window.open("fetch.html?" + params, "_blank", "width=1000,height=700");
+        }
     </script>
     <script src="config.js"></script>
-    <script src="script.js"></script>
 </body>
 </html>

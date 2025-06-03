@@ -6,9 +6,9 @@ const keyword = (urlParams.get("keyword") || "").toLowerCase();
 
 const statusSpan = document.getElementById("status");
 const resultsDiv = document.getElementById("results");
+let comments = [];
 
 async function fetchComments() {
-    let comments = [];
     let pageToken = "";
     let count = 0;
 
@@ -28,47 +28,47 @@ async function fetchComments() {
                 const hasKeyword = !keyword || topComment.textDisplay.toLowerCase().includes(keyword);
 
                 if (isInRange && hasKeyword) {
-                    comments.push({
+                    const parent = {
                         type: "댓글",
                         author: topComment.authorDisplayName,
                         text: topComment.textDisplay,
                         publishedAt: topComment.publishedAt,
                         likeCount: topComment.likeCount
-                    });
+                    };
+                    comments.push(parent);
                     count++;
                     statusSpan.innerText = `조회 중... (${count}개 수집됨)`;
-                }
 
-                const parentId = item.snippet.topLevelComment.id;
-                let replyToken = "";
-                do {
-                    const replyUrl = `https://www.googleapis.com/youtube/v3/comments?part=snippet&parentId=${parentId}&maxResults=100&pageToken=${replyToken}&key=${API_KEY}`;
-                    const replyRes = await fetch(replyUrl);
-                    const replyData = await replyRes.json();
+                    const parentId = item.snippet.topLevelComment.id;
+                    let replyToken = "";
+                    do {
+                        const replyUrl = `https://www.googleapis.com/youtube/v3/comments?part=snippet&parentId=${parentId}&maxResults=100&pageToken=${replyToken}&key=${API_KEY}`;
+                        const replyRes = await fetch(replyUrl);
+                        const replyData = await replyRes.json();
 
-                    replyToken = replyData.nextPageToken || "";
+                        replyToken = replyData.nextPageToken || "";
 
-                    for (const reply of replyData.items || []) {
-                        const replySnippet = reply.snippet;
-                        const replyDate = new Date(replySnippet.publishedAt);
-                        const replyInRange = (!isNaN(startDate) ? replyDate >= new Date(startDate.setHours(0, 0, 0, 0)) : true) &&
-                                             (!isNaN(endDate) ? replyDate <= new Date(endDate.setHours(23, 59, 59, 999)) : true);
-                        const replyHasKeyword = !keyword || replySnippet.textDisplay.toLowerCase().includes(keyword);
+                        for (const reply of replyData.items || []) {
+                            const replySnippet = reply.snippet;
+                            const replyDate = new Date(replySnippet.publishedAt);
+                            const replyInRange = (!isNaN(startDate) ? replyDate >= new Date(startDate.setHours(0, 0, 0, 0)) : true) &&
+                                                 (!isNaN(endDate) ? replyDate <= new Date(endDate.setHours(23, 59, 59, 999)) : true);
+                            const replyHasKeyword = !keyword || replySnippet.textDisplay.toLowerCase().includes(keyword);
 
-                        if (replyInRange && replyHasKeyword) {
-                            comments.push({
-                                type: "대댓글",
-                                author: replySnippet.authorDisplayName,
-                                text: replySnippet.textDisplay,
-                                publishedAt: replySnippet.publishedAt,
-                                likeCount: replySnippet.likeCount
-                            });
-                            count++;
-                            statusSpan.innerText = `조회 중... (${count}개 수집됨)`;
+                            if (replyInRange && replyHasKeyword) {
+                                comments.push({
+                                    type: "대댓글",
+                                    author: replySnippet.authorDisplayName,
+                                    text: replySnippet.textDisplay,
+                                    publishedAt: replySnippet.publishedAt,
+                                    likeCount: replySnippet.likeCount
+                                });
+                                count++;
+                                statusSpan.innerText = `조회 중... (${count}개 수집됨)`;
+                            }
                         }
-                    }
-
-                } while (replyToken);
+                    } while (replyToken);
+                }
             }
         } while (pageToken);
 
@@ -78,19 +78,19 @@ async function fetchComments() {
             return;
         }
 
-        comments.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
-
-        let table = "<table><thead><tr><th>#</th><th>Author</th><th>Comment</th><th>Likes</th><th>Date</th><th>Type</th></tr></thead><tbody>";
-        comments.forEach((c, index) => {
+        let table = "<button onclick='downloadComments()'>댓글 다운로드</button>";
+        table += "<table><thead><tr><th>#</th><th>Author</th><th>Comment</th><th>Likes</th><th>Date</th><th>Type</th></tr></thead><tbody>";
+        let index = 1;
+        for (const c of comments) {
             table += `<tr>
-                        <td>${index + 1}</td>
+                        <td>${index++}</td>
                         <td>${c.author}</td>
                         <td>${c.text}</td>
                         <td>${c.likeCount}</td>
                         <td>${new Date(c.publishedAt).toLocaleString()}</td>
                         <td>${c.type}</td>
                       </tr>`;
-        });
+        }
         table += "</tbody></table>";
         resultsDiv.innerHTML = table;
         statusSpan.innerText = `조회 완료: 총 ${comments.length}개`;
@@ -100,6 +100,29 @@ async function fetchComments() {
         statusSpan.innerText = "❌ 댓글 조회 실패. 콘솔을 확인하세요.";
         resultsDiv.innerHTML = "<p>Error fetching comments. Check video ID and API key.</p>";
     }
+}
+
+function downloadComments() {
+    const rows = [["번호", "작성자", "내용", "좋아요수", "날짜", "타입"]];
+    let index = 1;
+    for (const c of comments) {
+        rows.push([
+            index++,
+            c.author,
+            c.text.replace(/\n/g, " "),
+            c.likeCount,
+            new Date(c.publishedAt).toLocaleString(),
+            c.type
+        ]);
+    }
+    const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.map(f => `"\${f}"`).join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "youtube_comments.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 fetchComments();

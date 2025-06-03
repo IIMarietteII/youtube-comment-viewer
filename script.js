@@ -6,6 +6,11 @@ async function fetchComments() {
     const endDate = new Date(document.getElementById("endDate").value);
     const keyword = document.getElementById("keyword").value.trim().toLowerCase();
     const resultsDiv = document.getElementById("results");
+
+    const statusSpan = document.getElementById("status");
+    statusSpan.innerText = "조회 중...";
+    let count = 0;
+
     resultsDiv.innerHTML = "Loading...";
 
     let comments = [];
@@ -35,6 +40,13 @@ async function fetchComments() {
                         publishedAt: topComment.publishedAt,
                         likeCount: topComment.likeCount
                     });
+                    count++;
+                    statusSpan.innerText = `조회 중... (${count}개 수집됨)`;
+                        author: topComment.authorDisplayName,
+                        text: topComment.textDisplay,
+                        publishedAt: topComment.publishedAt,
+                        likeCount: topComment.likeCount
+                    });
                 }
 
                 // Step 2: Fetch all replies (if any)
@@ -57,6 +69,13 @@ async function fetchComments() {
                         if (replyInRange && replyHasKeyword) {
                             comments.push({
                                 type: "대댓글",
+                                author: replySnippet.authorDisplayName,
+                                text: replySnippet.textDisplay,
+                                publishedAt: replySnippet.publishedAt,
+                                likeCount: replySnippet.likeCount
+                            });
+                            count++;
+                            statusSpan.innerText = `조회 중... (${count}개 수집됨)`;
                                 author: replySnippet.authorDisplayName,
                                 text: replySnippet.textDisplay,
                                 publishedAt: replySnippet.publishedAt,
@@ -90,9 +109,11 @@ async function fetchComments() {
                       </tr>`;
         });
         table += "</tbody></table>";
+        statusSpan.innerText = `조회 완료: 총 ${comments.length}개`;
         resultsDiv.innerHTML = table;
     } catch (err) {
         console.error(err);
+        statusSpan.innerText = "❌ 댓글 조회 실패. 콘솔을 확인하세요.";
         resultsDiv.innerHTML = "<p>Error fetching comments. Check video ID and API key.</p>";
     }
 }
